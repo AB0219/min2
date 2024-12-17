@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQ Quiz Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="clock">Time: 0s</div>
+
+    <div id="startPage" class="container">
+        <h1>Welcome to the IQ Tester</h1>
+        <p>Test your IQ with fun questions!</p>
+        <button onclick="startQuiz()">Start IQ test</button>
+    </div>
+
+    <div id="quizPage" class="container hidden">
+        <div id="questionContainer"></div>
+        <button id="nextButton" onclick="nextQuestion()" disabled>Next Question</button>
+        <p id="timeTakenNote"></p>
+        <button id="skipButton" onclick="skipQuestion()">Skip</button>
+        <button id="markButton" onclick="markForReview()">Mark for Review</button>
+    </div>
+
+    <div id="resultPage" class="container hidden">
+        <h2>Quiz Results</h2>
+        <div id="resultMessage"></div>
+        <button onclick="restartQuiz()">Restart Quiz</button>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "What is 5 + 3?", options: ["6", "7", "8", "9"], correct: 2 },
+            { question: "Which number comes next in the sequence: 2, 4, 6, 8, ?", options: ["9", "10", "11", "12"], correct: 1 },
+            { question: "Which shape has four equal sides?", options: ["Triangle", "Rectangle", "Square", "Circle"], correct: 2 },
+            { question: "What is 12 / 4?", options: ["2", "3", "4", "5"], correct: 1 },
+            { question: "Which is the largest prime number less than 10?", options: ["5", "7", "8", "9"], correct: 1 },
+            { question: "What is the capital of France?", options: ["Berlin", "Madrid", "Paris", "Rome"], correct: 2 },
+            { question: "What is 15 * 2?", options: ["20", "30", "25", "35"], correct: 1 },
+            { question: "Which planet is known as the Red Planet?", options: ["Earth", "Mars", "Jupiter", "Venus"], correct: 1 },
+            { question: "What is the boiling point of water at sea level?", options: ["100°C", "90°C", "80°C", "120°C"], correct: 0 },
+            { question: "What is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], correct: 2 },
+            { question: "Which is the largest continent?", options: ["Africa", "Asia", "Europe", "North America"], correct: 1 },
+            { question: "Who developed the theory of relativity?", options: ["Isaac Newton", "Albert Einstein", "Galileo Galilei", "Nikola Tesla"], correct: 1 },
+            { question: "What is the smallest prime number?", options: ["0", "1", "2", "3"], correct: 2 },
+            { question: "Which gas do plants absorb from the atmosphere?", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"], correct: 1 },
+            { question: "What is the tallest mountain in the world?", options: ["K2", "Mount Everest", "Mount Kilimanjaro", "Mount Fuji"], correct: 1 },
+            { question: "Which country is known as the Land of the Rising Sun?", options: ["China", "Japan", "Korea", "Thailand"], correct: 1 },
+            { question: "What is the chemical symbol for gold?", options: ["Au", "Ag", "Pb", "Fe"], correct: 0 },
+            { question: "What is the largest planet in our solar system?", options: ["Earth", "Mars", "Jupiter", "Saturn"], correct: 2 },
+            { question: "Which element is the most abundant in the Earth’s crust?", options: ["Oxygen", "Silicon", "Iron", "Aluminum"], correct: 1 },
+            { question: "What is the longest river in the world?", options: ["Amazon", "Nile", "Yangtze", "Mississippi"], correct: 1 },
+            { question: "Who wrote 'Romeo and Juliet'?", options: ["Shakespeare", "Dickens", "Hemingway", "Twain"], correct: 0 }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let startTime = 0;
+        let totalTime = 0;
+        let elapsedSeconds = 0;
+        let questionStartTime = 0;
+
+        let clockInterval;
+        let markedQuestions = [];  // Array to hold marked question indices
+        let skippedQuestions = []; // Array to hold skipped question indices
+
+        // Shuffle the questions array and select only the first 10 questions
+        function shuffleQuestions() {
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+            questions.length = 10;
+        }
+
+        function startQuiz() {
+            shuffleQuestions();  // Shuffle questions before starting
+            document.getElementById('startPage').classList.add('hidden');
+            document.getElementById('quizPage').classList.remove('hidden');
+            document.getElementById('clock').style.display = 'block';
+            showQuestion(currentQuestionIndex);
+            startTimer();
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+
+            clockInterval = setInterval(() => {
+                elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('clock').innerText = `Time: ${elapsedSeconds}s`;
+            }, 1000);
+        }
+
+        function showQuestion(index) {
+            const questionContainer = document.getElementById('questionContainer');
+            const questionData = questions[index];
+
+            questionStartTime = Date.now();
+
+            questionContainer.innerHTML = `
+                <p><strong>${index + 1}. ${questionData.question}</strong></p>
+                ${questionData.options.map((option, i) => 
+                    `<button class="option" onclick="selectOption(${i})">${option}</button>`
+                ).join('')}
+            `;
+
+            document.getElementById('nextButton').disabled = true;
+            document.getElementById('timeTakenNote').innerText = '';
+            document.getElementById('skipButton').disabled = false;
+            document.getElementById('markButton').disabled = false;
+        }
+
+        function selectOption(selectedIndex) {
+            const questionData = questions[currentQuestionIndex];
+            const timeTaken = Math.floor((Date.now() - questionStartTime) / 1000);
+
+            document.getElementById('timeTakenNote').innerText = `Time taken to answer this question: ${timeTaken} seconds`;
+
+            totalTime += timeTaken;
+
+            if (selectedIndex === questionData.correct) {
+                score++;
+            }
+
+            document.querySelectorAll('.option').forEach(button => {
+                button.disabled = true;
+            });
+
+            document.getElementById('nextButton').disabled = false;
+        }
+
+        function skipQuestion() {
+            skippedQuestions.push(currentQuestionIndex);  // Mark as skipped
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion(currentQuestionIndex);
+            } else {
+                showResult();
+            }
+        }
+
+        function markForReview() {
+            markedQuestions.push(currentQuestionIndex);  // Mark as reviewed
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion(currentQuestionIndex);
+            } else {
+                showResult();
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion(currentQuestionIndex);
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            clearInterval(clockInterval);
+            document.getElementById('quizPage').classList.add('hidden');
+            document.getElementById('resultPage').classList.remove('hidden');
+
+            const iqScore = calculateIQ(score);
+            const resultMessage = `Your IQ Score: <strong>${iqScore}</strong><br>`;
+            const timeMessage = `Total Time Taken: <strong>${totalTime} seconds</strong>`;
+            const answeredMessage = `Questions Answered: <strong>${currentQuestionIndex}</strong><br>`;
+            const correctMessage = `Correct Answers: <strong>${score}</strong><br>`;
+            const markedMessage = `Questions Marked for Review: <strong>${markedQuestions.length}</strong><br>`;
+            const skippedMessage = `Questions Skipped (attempted but not answered): <strong>${skippedQuestions.length}</strong><br>`;
+
+            let feedback;
+            if (iqScore < 90) {
+                feedback = "Below Average IQ. Keep practicing!";
+            } else if (iqScore < 110) {
+                feedback = "Average IQ. Well done!";
+            } else if (iqScore < 130) {
+                feedback = "Above Average IQ. Great job!";
+            } else {
+                feedback = "Genius IQ! Excellent!";
+            }
+
+            document.getElementById('resultMessage').innerHTML = resultMessage + timeMessage + answeredMessage + correctMessage + markedMessage + skippedMessage + feedback;
+        }
+
+        function calculateIQ(score) {
+            return 40 + (score * 10);
+        }
+
+        function restartQuiz() {
+            score = 0;
+            currentQuestionIndex = 0;
+            totalTime = 0;
+            elapsedSeconds = 0;
+            skippedQuestions = [];
+            markedQuestions = [];
+            document.getElementById('resultPage').classList.add('hidden');
+            document.getElementById('startPage').classList.remove('hidden');
+            document.getElementById('clock').style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
